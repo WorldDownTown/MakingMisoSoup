@@ -14,7 +14,6 @@ typealias Ingredient = String
 typealias Ingredients = [Ingredient]
 typealias SaucePan = [Ingredient]
 
-func noop() {}
 class MisoSoupMaker {
 
     private let boilingTemperature: Temperature = 100
@@ -25,7 +24,6 @@ class MisoSoupMaker {
 
     // Holds the cooked incredients.
     private var saucePan = SaucePan()
-    private var count = 0
 
     init() {
         print("Cooking \(name)")
@@ -34,6 +32,9 @@ class MisoSoupMaker {
 
     private func cookMisoSoup() {
         addIngredient(boilIsComplete: false, coolingIsComplete: false)
+    }
+
+    private func noop() {
     }
 
     private func addIngredient(boilIsComplete boilIsComplete: Bool, coolingIsComplete: Bool) {
@@ -52,7 +53,7 @@ class MisoSoupMaker {
                 self.observeWaterTemperature()  // let the water boil
             } else if boilIsComplete && !coolingIsComplete && self.saucePan.count == 5 {
                 // Don't add more ingredients until the water has cooled.
-                noop()
+                self.noop()
             } else {
                 self.addIngredient(boilIsComplete: boilIsComplete, coolingIsComplete: coolingIsComplete)
             }
@@ -91,34 +92,36 @@ class MisoSoupMaker {
     }
 
     private func temperatureSignal() -> Signal<Temperature?, NoError> {
+        var count = 0
+
         return Signal { observer in
-            self.processTemperatureAfterTime(observer)
+
+            var processTemperatureAfterTime: (ReactiveCocoa.Observer<Temperature?, NoError> -> Void)!
+
+            processTemperatureAfterTime = { (observer: ReactiveCocoa.Observer<Temperature?, NoError>) in
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, Int64(1.0 * Double(NSEC_PER_SEC))), dispatch_get_main_queue()) {
+                    if count == 10 {
+                        observer.sendNext(self.boilingTemperature)
+                    } else if count == 30 {
+                        observer.sendNext(self.cooledTemperature)
+                    } else if count == 39 {
+                        print("Disposing temperature signal.")
+                        observer.sendCompleted()
+                    } else {
+                        observer.sendNext(nil)
+                    }
+
+                    if count != 39 {
+                        processTemperatureAfterTime(observer)
+                    }
+
+                    count++
+                }
+            }
+
+            processTemperatureAfterTime(observer)
+
             return nil
         }
-    }
-
-    private func processTemperatureAfterTime(observer: ReactiveCocoa.Observer<Temperature?, NoError>) {
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, Int64(1.0 * Double(NSEC_PER_SEC))), dispatch_get_main_queue()) {
-            self.processTemperature(observer)
-        }
-    }
-
-    private func processTemperature(observer: ReactiveCocoa.Observer<Temperature?, NoError>) {
-        if count == 10 {
-            observer.sendNext(boilingTemperature)
-        } else if count == 30 {
-            observer.sendNext(cooledTemperature)
-        } else if count == 39 {
-            print("Disposing temperature signal.")
-            observer.sendCompleted()
-        } else {
-            observer.sendNext(nil)
-        }
-
-        if count != 39 {
-            processTemperatureAfterTime(observer)
-        }
-
-        count++
     }
 }
