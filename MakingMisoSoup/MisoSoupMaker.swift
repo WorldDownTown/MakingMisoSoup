@@ -62,13 +62,13 @@ class MisoSoupMaker {
     private func observeWaterTemperature() {
         print("Watching the water.")
 
-        temperatureSignal().observeOn(UIScheduler()).observeNext { event in
-            guard let result = event else { return }
+        temperatureSignal().observeOn(UIScheduler()).observeNext { temperature in
+            guard let temperature = temperature else { return }
 
-            if result == self.boilingTemperature {
+            if temperature == self.boilingTemperature {
                 print("Water is boiling.")
                 self.addIngredient(boilIsComplete: true, coolingIsComplete: false)
-            } else if result == self.cooledTemperature {
+            } else if temperature == self.cooledTemperature {
                 print("Water is cooled.")
                 self.addIngredient(boilIsComplete: true, coolingIsComplete: true)
             }
