@@ -25,7 +25,6 @@ class MisoSoupMaker {
 
     // Holds the cooked incredients.
     private var saucePan = SaucePan()
-    private var timer: NSTimer?
     private var count = 0
 
     init() {
